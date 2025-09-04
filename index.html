@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 搜尋與整理工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-light.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 2rem;
+        }
+        #results-box {
+            min-height: 200px;
+            background-color: #ffffff;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            line-height: 1.75;
+            word-wrap: break-word;
+            overflow: auto;
+        }
+        #results-box h1, #results-box h2, #results-box h3, #results-box h4 {
+            font-weight: bold;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        #results-box h1 { font-size: 2em; }
+        #results-box h2 { font-size: 1.5em; }
+        #results-box h3 { font-size: 1.25em; }
+        #results-box h4 { font-size: 1em; }
+        #results-box ul, #results-box ol {
+            list-style-position: inside;
+            margin-bottom: 1rem;
+        }
+        #results-box ul li { list-style-type: disc; }
+        #results-box ol li { list-style-type: decimal; }
+        #results-box p {
+            margin-bottom: 1rem;
+        }
+        #results-box pre {
+            background-color: #f4f4f4;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="container bg-white rounded-xl shadow-lg p-6 md:p-10 border border-gray-200">
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-6">AI 搜尋與整理工具</h1>
+        <p class="text-center text-gray-500 mb-8">輸入您想搜尋並整理的內容，AI 將為您自動完成。</p>
+
+        <div class="flex flex-col md:flex-row gap-4 mb-6">
+            <input type="text" id="searchInput" placeholder="例如：台積電最新股價分析" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            <button id="searchButton" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md">
+                搜尋並整理
+            </button>
+        </div>
+
+        <div id="results-container" class="mt-8">
+            <div id="results-box" class="text-gray-700 text-lg">
+                <p>搜尋結果將會顯示在這裡...</p>
+            </div>
+            <div id="citations" class="mt-4 text-sm text-gray-600 space-y-2"></div>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const resultsBox = document.getElementById('results-box');
+        const citationsContainer = document.getElementById('citations');
+
+        // 這個 API Key 在 Canvas 環境中會被自動提供，所以這裡留空即可
+        // https://ai.google.dev/gemini-api/docs?hl=zh-tw (用這個網址找 API Key)
+        const apiKey = "AIzaSyAy2hp3ia73ePHOWNE75rTRARxWZ9-3xyw";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        // 處理 API 請求的函數
+        async function fetchAIResponse(userQuery) {
+            resultsBox.innerHTML = `<p class="text-center text-gray-400">正在搜尋並整理中，請稍候...</p>`;
+            citationsContainer.innerHTML = '';
+
+            try {
+                // 定義給 AI 的系統指令，引導它的回應風格和格式
+                const systemPrompt = "你是一位專業的研究助理。請根據搜尋到的資料，用條列式或段落方式，清晰、簡潔地整理並總結內容。如果有多個來源，請將資訊融會貫通。請直接提供整理好的內容，不要有任何多餘的對話或開頭語。請使用 Markdown 語法來美化內容，例如標題、列表和程式碼區塊。";
+
+                // 設定 API 請求的酬載 (payload)
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    // 啟用 Google Search 功能，讓模型能夠上網搜尋
+                    tools: [{ "google_search": {} }],
+                    // 傳遞系統指令給模型
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    let errorDetails;
+                    if (response.status === 401) {
+                        errorDetails = `API 請求失敗：權限不足。請檢查您的 API 金鑰是否有效或是否已正確提供。`;
+                    } else {
+                        try {
+                            const errorData = await response.json();
+                            if (errorData.error && errorData.error.message) {
+                                errorDetails = `API 請求失敗: ${errorData.error.message}`;
+                            } else {
+                                errorDetails = `API 請求失敗: 無法解析錯誤訊息 (非預期 JSON 格式)。狀態碼: ${response.status}`;
+                            }
+                        } catch (e) {
+                            errorDetails = `API 請求失敗：狀態碼 ${response.status}。可能為伺服器問題或無效請求。`;
+                        }
+                    }
+                    throw new Error(errorDetails);
+                }
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    // 1. 取得 AI 生成的文字內容並轉換 Markdown 為 HTML
+                    const markdownText = candidate.content.parts[0].text;
+                    const htmlContent = marked.parse(markdownText);
+                    resultsBox.innerHTML = htmlContent;
+
+                    // 2. 啟動 highlight.js 來美化程式碼區塊
+                    document.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightElement(block);
+                    });
+
+                    // 3. 取得引用來源資訊
+                    const groundingMetadata = candidate.groundingMetadata;
+                    if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                        const sources = groundingMetadata.groundingAttributions
+                            .map(attribution => ({
+                                uri: attribution.web?.uri,
+                                title: attribution.web?.title,
+                            }))
+                            .filter(source => source.uri && source.title);
+
+                        if (sources.length > 0) {
+                            citationsContainer.innerHTML = `<h3 class="font-bold text-gray-800 mb-2">參考來源:</h3>`;
+                            sources.forEach(source => {
+                                const sourceEl = document.createElement('div');
+                                sourceEl.innerHTML = `<a href="${source.uri}" target="_blank" class="text-blue-600 hover:underline">${source.title}</a>`;
+                                citationsContainer.appendChild(sourceEl);
+                            });
+                        }
+                    }
+                } else {
+                    resultsBox.innerHTML = "<p>抱歉，找不到相關資訊。請嘗試更換關鍵字。</p>";
+                }
+            } catch (error) {
+                console.error("發生錯誤:", error);
+                resultsBox.innerHTML = `<p>發生錯誤，請檢查您的網路連線或稍後再試。錯誤訊息: ${error.message}</p>`;
+                citationsContainer.innerHTML = '';
+            } finally {
+                searchButton.disabled = false;
+                searchButton.innerText = '搜尋並整理';
+            }
+        }
+
+        // 按鈕點擊事件監聽
+        searchButton.addEventListener('click', () => {
+            const query = searchInput.value.trim();
+            if (query) {
+                searchButton.disabled = true;
+                searchButton.innerText = '處理中...';
+                fetchAIResponse(query);
+            }
+        });
+
+        // 允許使用者按下 Enter 鍵搜尋
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchButton.click();
+            }
+        });
+    </script>
+</body>
+</html>
