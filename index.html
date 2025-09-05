@@ -74,6 +74,63 @@
       background: #555;
       border-radius: 4px;
     }
+
+    /* 自定義 radio button 樣式 */
+    input[type="radio"] {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      background-color: transparent;
+      position: relative;
+      cursor: pointer;
+    }
+
+    input[type="radio"]:checked {
+      background-color: #ffffff;
+    }
+
+    input[type="radio"]:checked::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      background-color: #121212;
+      border-radius: 50%;
+    }
+
+    /* 確保 label 文字顏色一致 */
+    label {
+      color: #ffffff;
+    }
+
+    /* 動畫 */
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in {
+      animation: fade-in 0.8s ease-out both;
+    }
+
+    .animate-fade-in-up {
+      animation: fade-in 0.8s ease-out both;
+    }
+
+    .animate-fade-in-down {
+      animation: fade-in 0.8s ease-out both;
+      animation-delay: 0.1s;
+    }
+
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
   </style>
 </head>
 <body class="min-h-screen p-8 text-gray-200 bg-[#121212]">
@@ -97,23 +154,23 @@
       <label class="block text-gray-300 font-semibold mb-2">選擇查詢模式：</label>
       <div class="flex flex-wrap gap-4">
         <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="default" checked class="accent-cyan-500">
+          <input type="radio" name="mode" value="default" checked>
           <span>預設</span>
         </label>
         <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="summary" class="accent-cyan-500">
+          <input type="radio" name="mode" value="summary">
           <span>擷取重點</span>
         </label>
         <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="related-sites" class="accent-cyan-500">
+          <input type="radio" name="mode" value="related-sites">
           <span>提供相關網站</span>
         </label>
         <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="translate" class="accent-cyan-500">
+          <input type="radio" name="mode" value="translate">
           <span>翻譯成中文</span>
         </label>
         <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="explain" class="accent-cyan-500">
+          <input type="radio" name="mode" value="explain">
           <span>AI 問題解釋</span>
         </label>
       </div>
@@ -128,36 +185,13 @@
     </div>
   </div>
 
-  <style>
-    /* 動畫 */
-    @keyframes fade-in {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .animate-fade-in {
-      animation: fade-in 0.8s ease-out both;
-    }
-
-    .animate-fade-in-up {
-      animation: fade-in 0.8s ease-out both;
-    }
-
-    .animate-fade-in-down {
-      animation: fade-in 0.8s ease-out both;
-      animation-delay: 0.1s;
-    }
-
-    .delay-100 { animation-delay: 0.1s; }
-    .delay-200 { animation-delay: 0.2s; }
-  </style>
-
   <script>
     const searchInput = document.getElementById('searchInput');
     const searchButton = document.getElementById('searchButton');
     const resultsBox = document.getElementById('results-box');
     const citationsContainer = document.getElementById('citations');
 
+    // https://ai.google.dev/gemini-api/docs?hl=zh-tw (用這個網址找 API Key)
     const apiKey = "AIzaSyAy2hp3ia73ePHOWNE75rTRARxWZ9-3xyw";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
