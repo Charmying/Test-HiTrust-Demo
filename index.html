@@ -5,88 +5,152 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AI 搜尋與整理工具</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-light.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    body { font-family: 'Noto Sans TC', sans-serif; background-color: #f3f4f6; }
-    .container { max-width: 800px; margin: auto; padding: 2rem; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #121212;
+    }
+
+    .glass-card {
+      background: rgba(30, 30, 30, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 1rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      transition: all 0.3s ease-in-out;
+    }
+
+    .glass-card:hover {
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7);
+      transform: translateY(-2px);
+    }
+
     #results-box {
-      min-height: 200px; background-color: #fff; border-radius: 0.5rem;
-      padding: 1.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      line-height: 1.75; word-wrap: break-word; overflow: auto;
+      min-height: 200px;
+      background-color: #1f1f1f;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+      color: #e5e5e5;
+      overflow: auto;
     }
+
     #results-box h1, #results-box h2, #results-box h3, #results-box h4 {
-      font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem;
+      font-weight: bold;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
     }
+
     #results-box h1 { font-size: 2em; }
     #results-box h2 { font-size: 1.5em; }
     #results-box h3 { font-size: 1.25em; }
     #results-box h4 { font-size: 1em; }
-    #results-box ul, #results-box ol { list-style-position: inside; margin-bottom: 1rem; }
-    #results-box ul li { list-style-type: disc; }
-    #results-box ol li { list-style-type: decimal; }
+    #results-box ul, #results-box ol {
+      list-style-position: inside;
+      margin-bottom: 1rem;
+    }
+
+    #results-box ul li::marker {
+      color: #00bcd4;
+    }
+
     #results-box pre {
-      background-color: #f4f4f4; padding: 1rem; border-radius: 0.5rem;
-      overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;
+      background-color: #2e2e2e;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      color: #e0e0e0;
+    }
+
+    /* 滾動條樣式 */
+    #results-box::-webkit-scrollbar {
+      width: 8px;
+    }
+    #results-box::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 4px;
     }
   </style>
 </head>
-<body class="bg-gray-100 p-8">
-  <div class="container bg-white rounded-xl shadow-lg p-6 md:p-10 border border-gray-200">
-    <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-6">AI 搜尋與整理工具</h1>
-    <p class="text-center text-gray-500 mb-6">輸入您想搜尋的內容，選擇處理方式，AI 將自動完成！</p>
+<body class="min-h-screen p-8 text-gray-200 bg-[#121212]">
+
+  <div class="container max-w-3xl mx-auto glass-card p-8 md:p-12">
+    <h1 class="text-4xl font-bold text-center text-white mb-6 tracking-wide animate-fade-in-down">AI 搜尋與整理工具</h1>
+    <p class="text-center text-gray-400 mb-8 animate-fade-in">輸入您想搜尋的內容，選擇處理方式，AI 將自動完成！</p>
 
     <!-- 搜尋輸入框與按鈕 -->
-    <div class="flex flex-col md:flex-row gap-4 mb-4">
+    <div class="flex flex-col md:flex-row gap-4 mb-6 animate-fade-in-up">
       <input type="text" id="searchInput" placeholder="例如：台積電最新股價分析"
-             class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"/>
+             class="flex-1 p-3 bg-[#1f1f1f] text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all"/>
       <button id="searchButton"
-              class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md">
+              class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-cyan-400 hover:to-blue-400 transition-all shadow-lg">
         搜尋並整理
       </button>
     </div>
 
     <!-- 查詢模式選擇 -->
-    <div class="mb-6">
-      <label class="block text-gray-700 font-semibold mb-2">選擇查詢模式：</label>
+    <div class="mb-6 animate-fade-in-up delay-100">
+      <label class="block text-gray-300 font-semibold mb-2">選擇查詢模式：</label>
       <div class="flex flex-wrap gap-4">
         <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="default" checked>
+          <input type="radio" name="mode" value="default" checked class="accent-cyan-500">
           <span>預設</span>
         </label>
         <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="summary">
+          <input type="radio" name="mode" value="summary" class="accent-cyan-500">
           <span>擷取重點</span>
         </label>
         <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="related-sites">
+          <input type="radio" name="mode" value="related-sites" class="accent-cyan-500">
           <span>提供相關網站</span>
         </label>
         <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="translate">
+          <input type="radio" name="mode" value="translate" class="accent-cyan-500">
           <span>翻譯成中文</span>
         </label>
         <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="explain">
+          <input type="radio" name="mode" value="explain" class="accent-cyan-500">
           <span>AI 問題解釋</span>
         </label>
-        <!-- <label class="flex items-center space-x-2">
-          <input type="radio" name="mode" value="charts">
-          <span>提供統計/圖表</span>
-        </label> -->
       </div>
     </div>
 
     <!-- 搜尋結果 -->
-    <div id="results-container" class="mt-8">
-      <div id="results-box" class="text-gray-700 text-lg">
-        <p>搜尋結果將會顯示在這裡...</p>
+    <div id="results-container" class="mt-8 animate-fade-in-up delay-200">
+      <div id="results-box" class="text-base leading-relaxed">
+        <p class="text-gray-400">搜尋結果將會顯示在這裡...</p>
       </div>
-      <div id="citations" class="mt-4 text-sm text-gray-600 space-y-2"></div>
+      <div id="citations" class="mt-4 text-sm text-gray-400 space-y-2"></div>
     </div>
   </div>
+
+  <style>
+    /* 動畫 */
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in {
+      animation: fade-in 0.8s ease-out both;
+    }
+
+    .animate-fade-in-up {
+      animation: fade-in 0.8s ease-out both;
+    }
+
+    .animate-fade-in-down {
+      animation: fade-in 0.8s ease-out both;
+      animation-delay: 0.1s;
+    }
+
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+  </style>
 
   <script>
     const searchInput = document.getElementById('searchInput');
